@@ -1,0 +1,78 @@
+
+
+// Input/Output Pins
+int inPin = 2;       // the number of the input pin
+					 // Green Wire
+int outPin = 8;      // the number of the output pin
+					 // Orange Wire
+
+int driverPin1 = 13; // first of 2 bit input to motor driver
+int driverPin2 = 12; // second of 2 bit input to motor driver
+					 // Yellow and Pink Wire respectively
+
+int driverEnable = 3; // input PWM for driving motor
+					  // Purple Wire
+
+int readPot = A0;    // Reads the value of the potentiometer
+					 // and outputs it from 0-1024 based on voltage
+
+// Variables
+int outState = LOW;   // the current state of the output pin
+int curReading;       // the current reading from the input pin
+int outPrev = HIGH;   // the previous reading from the input pin
+float potVal = 0;		  // read potentiometer value
+int outVal = 0;
+
+long inTime = 0;      // the last time the output pin was toggled
+long deBounce = 200;  // the debounce time
+
+void setup() {
+  pinMode(inPin, INPUT);
+  pinMode(outPin, OUTPUT);
+  pinMode(driverPin1, OUTPUT);
+  pinMode(driverPin2, OUTPUT);
+  pinMode(driverEnable, OUTPUT);
+}
+
+void loop() {
+  curReading = digitalRead(inPin);
+  potVal = analogRead(readPot);
+  outVal = (potVal/1024)*255;
+  
+  if (curReading == HIGH && outPrev == LOW && millis() - inTime > deBounce) {
+    if (outState == HIGH) {
+    	outState = LOW;
+    }
+    else {
+    	outState = HIGH;
+    }
+
+  inTime = millis();    
+  }
+	
+  if (outState == HIGH) {
+  	// Do this if outState is HIGH
+    driveMotor();
+  }
+  else {
+  	stopMotor();
+  }
+  digitalWrite(outPin, outState);
+  outPrev = curReading;
+}
+
+void driveMotor() {
+	// Drives the motor with a PWM signal of value 180 (from max of 255)
+  digitalWrite(driverPin1, LOW);
+  digitalWrite(driverPin2, HIGH);  // Input bits 01 delivers clockwise rotation
+  								   // Input bits 10 delivers anti-clockwise rotation
+  analogWrite(driverEnable, outVal);  // Outputs a PWM signal of 500Hz at ~70% duty cycle 
+}
+
+void stopMotor() {
+	// Stops the motor, by setting Driver Pins to 00 and turning OFF PWM signal.
+  digitalWrite(driverPin1, LOW);
+  digitalWrite(driverPin2, LOW);
+  
+  analogWrite(driverEnable, 0);
+}
